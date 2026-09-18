@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.wynout.barhide",
+  "name": "Bar Hide",
+  "version": "0.4.0",
+  "author": "wynout",
+  "license": "MIT",
+  "description": "Hide Omarchy top bar on multiple monitors - pin the top bar to one monitor/screen or several. With nothing selected, the native bar-on-every-screen behavior applies.",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "Picker.qml"
+  },
+  "barWidget": {
+    "displayName": "Bar Hide",
+    "description": "Pin the bar to the screens you pick",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
