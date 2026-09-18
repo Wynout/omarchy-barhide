@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.wynout.monobar",
+  "name": "MonoBar",
+  "version": "0.2.0",
+  "author": "wynout",
+  "license": "MIT",
+  "description": "Choose which monitors carry the Omarchy bar — one, several, or all. Selected screens get the bar while connected; with none connected the native bar-on-every-screen behavior applies. Inherits the native bar — widgets, layout, theming and popouts stay Omarchy-owned. Ships with a picker widget that lives in the bar.",
+  "kinds": ["bar", "bar-widget"],
+  "entryPoints": {
+    "bar": "Bar.qml",
+    "barWidget": "Picker.qml"
+  },
+  "barWidget": {
+    "displayName": "MonoBar",
+    "description": "Pick the screens that carry the bar",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
