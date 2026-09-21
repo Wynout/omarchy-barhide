@@ -8,6 +8,10 @@ import "Model.js" as Model
 // identity, and toggles which of them carry the bar. Settings persist in the
 // picker's own bar.layout entry via updateEntryInline, which is the same
 // write path the built-in clock uses for its format cycling.
+//
+// Visuals use the shell's kit: PanelHero header, PanelSectionHeader section
+// labels, whole-row clickable cards (the Ui.Toggle pattern — row owns the
+// click, ToggleSwitch is presentation only), and Ui.Button for actions.
 Panel {
   id: root
   moduleName: "wynout.barhide"
@@ -83,6 +87,17 @@ Panel {
     return out
   }
 
+  // Connected screens currently without the bar — feeds the hero meta line.
+  readonly property var hiddenNames: {
+    var screens = Quickshell.screens || []
+    var out = []
+    for (var i = 0; i < screens.length; i++)
+      if (!onBarNow(screens[i])) out.push(String(screens[i].name || ""))
+    return out
+  }
+
+  readonly property int onCount: (Quickshell.screens || []).length - hiddenNames.length
+
   function forgetRef(ref) {
     var list = []
     for (var i = 0; i < selectedRefs.length; i++)
@@ -110,51 +125,134 @@ Panel {
     return false
   }
 
-  // On/off switch for one screen's bar. The caller owns the value — binds
-  // `checked` to the effective bar state and flips it via `onToggled` — the
-  // same stateless pattern Ui.Toggle and Ui.ToggleSwitch are built around.
-  component ScreenToggle: ToggleSwitch {
-    id: screenToggleRoot
+  // One connected screen: a hoverable, whole-row clickable card. The
+  // ToggleSwitch is presentation only — the row owns the click, exactly the
+  // Ui.Toggle pattern — so the hit target is the full row.
+  component ScreenRow: BorderSurface {
+    id: rowRoot
 
-    signal activated()
+    required property var modelData
 
-    checked: false
-    onToggled: screenToggleRoot.activated()
-  }
+    readonly property bool onBar: root.onBarNow(modelData)
+    readonly property bool hot: rowMouse.containsMouse
 
-  // Small text button for actions that aren't on/off (forget, show on all).
-  component RoleButton: Rectangle {
-    id: roleButton
-
-    property string label: ""
-    property bool highlighted: false
-
-    signal activated()
-
-    implicitWidth: labelMeter.implicitWidth + Style.space(14)
-    implicitHeight: Style.space(20)
+    width: parent.width
+    implicitHeight: rowLayout.implicitHeight + Style.space(12)
     radius: Style.cornerRadius
-    opacity: enabled ? 1.0 : 0.4
-    color: roleMouse.containsMouse || highlighted ? Style.selectedFill : Style.normalFill
-    border.width: 1
-    border.color: highlighted ? Style.selectedBorderColor : Style.normalBorderColor
 
-    Text {
-      id: labelMeter
-      anchors.centerIn: parent
-      text: roleButton.label
-      color: roleButton.highlighted ? Color.accent : Color.foreground
-      font.family: root.bar ? root.bar.fontFamily : Style.font.family
-      font.pixelSize: Style.font.caption
+    color: Style.controlFill(false, hot, root.barForeground, Color.accent)
+    borderSpec: Border.controlSpec(hot ? "hover-cursor" : "normal", root.barForeground, Color.accent)
+    Behavior on color { ColorAnimation { duration: 100 } }
+
+    Row {
+      id: rowLayout
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.leftMargin: Style.spacing.rowPaddingX
+      anchors.rightMargin: Style.spacing.rowPaddingX
+      spacing: Style.space(10)
+
+      // Bar-state dot: accent when the screen carries the bar, dim when not.
+      Rectangle {
+        id: statusDot
+        width: Style.space(7)
+        height: Style.space(7)
+        radius: width / 2
+        anchors.verticalCenter: parent.verticalCenter
+        color: rowRoot.onBar ? Color.accent : Qt.darker(root.barForeground, 1.6)
+        Behavior on color { ColorAnimation { duration: 120 } }
+      }
+
+      Column {
+        width: rowLayout.width - statusDot.width - rowToggle.implicitWidth - rowLayout.spacing * 2
+        spacing: Style.space(1)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          width: parent.width
+          text: rowRoot.modelData.name
+          color: root.barForeground
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.body
+          font.bold: rowRoot.onBar
+          elide: Text.ElideRight
+        }
+
+        Text {
+          width: parent.width
+          text: rowRoot.modelData.model || "unknown model"
+          color: Color.muted
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideRight
+        }
+      }
+
+      ToggleSwitch {
+        id: rowToggle
+        checked: rowRoot.onBar
+        interactive: false
+        cursorRing: false
+        anchors.verticalCenter: parent.verticalCenter
+      }
     }
 
     MouseArea {
-      id: roleMouse
+      id: rowMouse
       anchors.fill: parent
-      enabled: roleButton.enabled
-      hoverEnabled: roleButton.enabled
+      hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
-      onClicked: roleButton.activated()
+      onClicked: root.toggleScreen(rowRoot.modelData)
+    }
+  }
+
+  // A selected reference whose monitor is away. Muted card; the only action
+  // is forgetting it.
+  component UnresolvedRow: BorderSurface {
+    id: unresolvedRoot
+
+    required property var modelData
+
+    width: parent.width
+    implicitHeight: unresolvedLayout.implicitHeight + Style.space(10)
+    radius: Style.cornerRadius
+    color: Style.normalFillFor(root.barForeground, Color.accent)
+    borderSpec: Border.controlSpec("normal", root.barForeground, Color.accent)
+
+    Row {
+      id: unresolvedLayout
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.verticalCenter: parent.verticalCenter
+      anchors.leftMargin: Style.spacing.rowPaddingX
+      anchors.rightMargin: Style.spacing.rowPaddingX
+      spacing: Style.space(8)
+
+      Text {
+        width: parent.width - forgetButton.implicitWidth - parent.spacing
+        text: unresolvedRoot.modelData.name
+          ? unresolvedRoot.modelData.name + " (not connected)"
+          : "not connected"
+        color: Color.muted
+        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+        font.pixelSize: Style.font.caption
+        elide: Text.ElideRight
+        anchors.verticalCenter: parent.verticalCenter
+      }
+
+      // The kit's own row-edge forget/unpair affordance: quiet at rest,
+      // urgent-tinted on hover.
+      PanelActionButton {
+        id: forgetButton
+        anchors.verticalCenter: parent.verticalCenter
+        iconText: "\uDB80\uDD59"
+        tooltipText: "forget"
+        foreground: Color.muted
+        hoverColor: Color.urgent
+        fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+        onClicked: root.forgetRef(unresolvedRoot.modelData)
+      }
     }
   }
 
@@ -179,122 +277,62 @@ Panel {
         width: parent.width
         spacing: Style.space(10)
 
-        // ---- Hero: title · mode read-out
-        Text {
+        // ---- Hero: glyph · title · hidden read-out · on/total pill
+        PanelHero {
           width: parent.width
-          text: "Bar Hide"
-          color: root.barForeground
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.font.title
-          font.bold: true
-        }
+          title: "Bar Hide"
+          meta: root.hiddenNames.length
+            ? "hidden: " + root.hiddenNames.join(", ")
+            : "none hidden"
+          detail: root.onCount + "/" + (Quickshell.screens || []).length
+          foreground: root.barForeground
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
 
-        Text {
-          width: parent.width
-          text: root.resolvedTargets.length
-            ? "Bar on: " + root.resolvedTargets.map(function(s) { return s.name }).join(", ")
-            : (root.selectedRefs.length
-                ? "Nothing hidden is connected - bar on every screen."
-                : "Bar on every screen - hide one to pin the rest.")
-          color: Color.muted
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
+          iconComponent: Text {
+            textFormat: Text.PlainText
+            // Same glyph convention as Picker.qml's widget button:
+            // U+F0379 single monitor (a selection exists), U+F037A multiple
+            // (all screens) — UTF-16 surrogate escapes keep the source ASCII.
+            text: root.selectedRefs.length ? "\uDB80\uDF79" : "\uDB80\uDF7A"
+            color: root.barForeground
+            font.family: root.bar ? root.bar.fontFamily : Style.font.family
+            font.pixelSize: Style.font.display
+          }
         }
 
         PanelSeparator {}
 
         // ---- Connected screens
+        PanelSectionHeader {
+          text: "Screens"
+          foreground: root.barForeground
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+        }
+
         Repeater {
           model: Quickshell.screens
 
-          delegate: Column {
-            id: screenRow
-
-            required property var modelData
-
-            readonly property bool onBar: root.onBarNow(modelData)
-
-            width: parent.width
-            spacing: Style.space(4)
-
-            Item {
-              width: parent.width
-              implicitHeight: Math.max(nameText.implicitHeight, screenToggle.implicitHeight)
-
-              Column {
-                id: nameText
-                anchors.left: parent.left
-                anchors.right: screenToggle.left
-                anchors.rightMargin: Style.space(8)
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(1)
-
-                Text {
-                  text: screenRow.modelData.name
-                    + (screenRow.onBar ? " - bar enabled" : "")
-                  color: root.barForeground
-                  font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                  font.pixelSize: Style.font.body
-                  font.bold: screenRow.onBar
-                  elide: Text.ElideRight
-                  width: parent.width
-                }
-
-                Text {
-                  text: screenRow.modelData.model || "unknown model"
-                  color: Color.muted
-                  font.family: root.bar ? root.bar.fontFamily : Style.font.family
-                  font.pixelSize: Style.font.caption
-                  elide: Text.ElideRight
-                  width: parent.width
-                }
-              }
-
-              ScreenToggle {
-                id: screenToggle
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                checked: screenRow.onBar
-                onActivated: root.toggleScreen(screenRow.modelData)
-              }
-            }
-          }
+          delegate: ScreenRow {}
         }
 
         // ---- Selected but not connected: they keep their place in the
         // list until their monitor returns, but can be forgotten here.
+        PanelSectionHeader {
+          text: "Not connected"
+          visible: root.unresolvedRefs.length > 0
+          foreground: root.barForeground
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+        }
+
         Repeater {
           model: root.unresolvedRefs
 
-          delegate: Row {
-            id: unresolvedRow
-
-            required property var modelData
-
-            width: parent.width
-            spacing: Style.space(8)
-
-            Text {
-              text: unresolvedRow.modelData.name
-                ? unresolvedRow.modelData.name + " (not connected)"
-                : "not connected"
-              color: Color.muted
-              font.family: root.bar ? root.bar.fontFamily : Style.font.family
-              font.pixelSize: Style.font.caption
-              elide: Text.ElideRight
-              anchors.verticalCenter: parent.verticalCenter
-            }
-
-            RoleButton {
-              label: "forget"
-              onActivated: root.forgetRef(unresolvedRow.modelData)
-            }          }
+          delegate: UnresolvedRow {}
         }
 
         PanelSeparator {}
 
-        // ---- Selection read-out + clear
+        // ---- Selection read-out (full picture, including not-connected refs)
         Text {
           width: parent.width
           text: root.selectedRefs.length
@@ -306,23 +344,12 @@ Panel {
           wrapMode: Text.WordWrap
         }
 
-        Row {
-          spacing: Style.space(6)
-
-          RoleButton {
-            label: "show on all"
-            enabled: root.selectedRefs.length > 0
-            onActivated: root.clearAll()
-          }
-        }
-
-        Text {
-          width: parent.width
-          text: "Nothing hidden (or none of it connected) - the bar shows on every screen."
-          color: Color.muted
-          font.family: root.bar ? root.bar.fontFamily : Style.font.family
-          font.pixelSize: Style.font.caption
-          wrapMode: Text.WordWrap
+        Button {
+          text: "show on all"
+          enabled: root.selectedRefs.length > 0
+          opacity: enabled ? 1.0 : 0.4
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          onClicked: root.clearAll()
         }
       }
     }
