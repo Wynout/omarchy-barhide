@@ -119,7 +119,7 @@ services).
 ## Verification
 
 ```bash
-PLUGIN_DIR=~/.config/omarchy/plugins/io.github.wynout.barhide
+PLUGIN_DIR=~/.config/omarchy/plugins/wynout.barhide
 omarchy plugin validate "$PLUGIN_DIR"
 qmllint -I "$OMARCHY_PATH/shell" "$PLUGIN_DIR/Picker.qml" "$PLUGIN_DIR/Panel.qml"
 omarchy restart shell

@@ -10,7 +10,7 @@ import "Model.js" as Model
 // write path the built-in clock uses for its format cycling.
 Panel {
   id: root
-  moduleName: "io.github.wynout.barhide"
+  moduleName: "wynout.barhide"
   manageIpc: false
 
   property var anchorItem: null

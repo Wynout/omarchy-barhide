@@ -14,7 +14,7 @@ theming and popouts stay Omarchy-owned.
 
 ```sh
 omarchy plugin add https://github.com/wynout/omarchy-barhide.git --enable
-omarchy plugin enable io.github.wynout.barhide --section right
+omarchy plugin enable wynout.barhide --section right
 omarchy restart shell
 ```
 
@@ -40,7 +40,7 @@ Settings persist in Bar Hide's own entry in `bar.layout` inside
 
 ```json
 {
-  "id": "io.github.wynout.barhide",
+  "id": "wynout.barhide",
   "monitors": [
     { "name": "HDMI-A-1", "model": "LG ULTRAGEAR", "serial": "123abc456" }
   ]
@@ -86,13 +86,13 @@ whole bar).
 ## Remove
 
 ```sh
-omarchy plugin remove io.github.wynout.barhide
+omarchy plugin remove wynout.barhide
 ```
 
 ## Development
 
 ```sh
-PLUGIN_DIR=~/.config/omarchy/plugins/io.github.wynout.barhide
+PLUGIN_DIR=~/.config/omarchy/plugins/wynout.barhide
 omarchy plugin validate "$PLUGIN_DIR"
 qmllint -I "$OMARCHY_PATH/shell" "$PLUGIN_DIR/Picker.qml" "$PLUGIN_DIR/Panel.qml"
 ```

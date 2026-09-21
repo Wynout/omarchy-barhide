@@ -18,7 +18,7 @@ import "Model.js" as Model
 // forwards the panel lifecycle, Panel.qml owns the popup content.
 BarWidget {
   id: root
-  moduleName: "io.github.wynout.barhide"
+  moduleName: "wynout.barhide"
 
   Component.onCompleted: root.refreshSelection()
 
@@ -296,9 +296,11 @@ BarWidget {
     // U+F037A multiple) — literal astral-plane characters get mangled by
     // some toolchains, escapes keep the source pure ASCII.
     text: root.hasTarget ? "\uDB80\uDF79" : "\uDB80\uDF7A"
+    // targets may be one or several screens; "single" is just "a selection"
     tooltipText: root.hasTarget
-      ? "Bar Hide — bar follows one screen"
-      : "Bar Hide — bar on every screen"
+      ? "Bar Hide: bar on " + root.targetScreens.length + " of "
+        + (Quickshell.screens || []).length + " screens"
+      : "Bar Hide: bar on every screen"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.togglePanel()
     }
