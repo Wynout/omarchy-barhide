@@ -292,10 +292,10 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    // Nerd Font glyphs as UTF-16 escapes (U+F0379 single monitor,
-    // U+F037A multiple) — literal astral-plane characters get mangled by
+    // Nerd Font glyph as UTF-16 escapes (U+F0DDC md-monitor-star — the
+    // pinned monitor) — literal astral-plane characters get mangled by
     // some toolchains, escapes keep the source pure ASCII.
-    text: root.hasTarget ? "\uDB80\uDF79" : "\uDB80\uDF7A"
+    text: "\uDB83\uDDDC"
     // targets may be one or several screens; "single" is just "a selection"
     tooltipText: root.hasTarget
       ? "Bar Hide: bar on " + root.targetScreens.length + " of "

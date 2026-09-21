@@ -290,10 +290,10 @@ Panel {
 
           iconComponent: Text {
             textFormat: Text.PlainText
-            // Same glyph convention as Picker.qml's widget button:
-            // U+F0379 single monitor (a selection exists), U+F037A multiple
-            // (all screens) — UTF-16 surrogate escapes keep the source ASCII.
-            text: root.selectedRefs.length ? "\uDB80\uDF79" : "\uDB80\uDF7A"
+            // Same glyph as Picker.qml's widget button: U+F0DDC
+            // md-monitor-star (the pinned monitor) — UTF-16 surrogate
+            // escapes keep the source ASCII.
+            text: "\uDB83\uDDDC"
             color: root.barForeground
             font.family: root.bar ? root.bar.fontFamily : Style.font.family
             font.pixelSize: Style.font.display
