@@ -110,6 +110,19 @@ Panel {
     return false
   }
 
+  // On/off switch for one screen's bar. The caller owns the value — binds
+  // `checked` to the effective bar state and flips it via `onToggled` — the
+  // same stateless pattern Ui.Toggle and Ui.ToggleSwitch are built around.
+  component ScreenToggle: ToggleSwitch {
+    id: screenToggleRoot
+
+    signal activated()
+
+    checked: false
+    onToggled: screenToggleRoot.activated()
+  }
+
+  // Small text button for actions that aren't on/off (forget, show on all).
   component RoleButton: Rectangle {
     id: roleButton
 
@@ -181,8 +194,8 @@ Panel {
           text: root.resolvedTargets.length
             ? "Bar on: " + root.resolvedTargets.map(function(s) { return s.name }).join(", ")
             : (root.selectedRefs.length
-                ? "Nothing hidden is connected — bar on every screen."
-                : "Bar on every screen — hide one to pin the rest.")
+                ? "Nothing hidden is connected - bar on every screen."
+                : "Bar on every screen - hide one to pin the rest.")
           color: Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
@@ -207,19 +220,19 @@ Panel {
 
             Item {
               width: parent.width
-              implicitHeight: Math.max(nameText.implicitHeight, roleButtons.implicitHeight)
+              implicitHeight: Math.max(nameText.implicitHeight, screenToggle.implicitHeight)
 
               Column {
                 id: nameText
                 anchors.left: parent.left
-                anchors.right: roleButtons.left
+                anchors.right: screenToggle.left
                 anchors.rightMargin: Style.space(8)
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Style.space(1)
 
                 Text {
                   text: screenRow.modelData.name
-                    + (screenRow.onBar ? " — bar enabled" : "")
+                    + (screenRow.onBar ? " - bar enabled" : "")
                   color: root.barForeground
                   font.family: root.bar ? root.bar.fontFamily : Style.font.family
                   font.pixelSize: Style.font.body
@@ -238,17 +251,12 @@ Panel {
                 }
               }
 
-              Row {
-                id: roleButtons
+              ScreenToggle {
+                id: screenToggle
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(6)
-
-                RoleButton {
-                  label: screenRow.onBar ? "hide" : "show"
-                  highlighted: screenRow.onBar
-                  onActivated: root.toggleScreen(screenRow.modelData)
-                }
+                checked: screenRow.onBar
+                onActivated: root.toggleScreen(screenRow.modelData)
               }
             }
           }
@@ -281,8 +289,7 @@ Panel {
             RoleButton {
               label: "forget"
               onActivated: root.forgetRef(unresolvedRow.modelData)
-            }
-          }
+            }          }
         }
 
         PanelSeparator {}
@@ -292,7 +299,7 @@ Panel {
           width: parent.width
           text: root.selectedRefs.length
             ? "Bar on: " + root.selectedRefs.map(Model.refLabel).join(", ")
-            : "Nothing hidden — bar on every screen."
+            : "Nothing hidden - bar on every screen."
           color: Color.foreground
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
@@ -311,7 +318,7 @@ Panel {
 
         Text {
           width: parent.width
-          text: "Nothing hidden (or none of it connected) — the bar shows on every screen."
+          text: "Nothing hidden (or none of it connected) - the bar shows on every screen."
           color: Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
