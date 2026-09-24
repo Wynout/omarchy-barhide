@@ -40,6 +40,8 @@ not a bar replacement, so no `omarchy bar use` is needed.)
 Click the picker icon in the bar to open the screen list. Each connected
 screen gets a **show** / **hide** toggle:
 
+![Bar Hide popup: per-screen show/hide toggles, hidden screens listed in the header, "show on all" at the bottom](docs/plugin-main-window.png)
+
 - With screens selected, **show** adds a screen to the bar, **hide** removes
   it, and **show on all** clears the selection so the bar covers everything.
 - In that all-screens state every row reads **hide** — hiding one screen
@@ -61,15 +63,15 @@ Settings persist in Bar Hide's own entry in `bar.layout` inside
 }
 ```
 
-Config written by older versions (`primary`/`secondary` keys) keeps working;
-the picker rewrites it in the new shape on its next save.
+List entries can be plain strings (case-insensitive substring of model or
+name) or full `{ name, model, serial }` references. Matching scores every
+connected screen against the stored reference — name +2, serial +1,
+model +1 — and the single highest-scoring screen wins; a genuine tie
+refuses to guess. Config written by older versions (`primary`/`secondary`
+keys) keeps working and is rewritten in the new shape on the next save.
 
-Matching scores every connected screen against the stored reference —
-name +2, serial +1, model +1 — and the single highest-scoring screen wins.
-A genuine tie (reference cannot tell two screens apart) refuses to guess.
-
-A hand-edit override lives under `bar.barhide` in shell.json and takes
-precedence over the widget's own entry:
+A hand-edit override under `bar.barhide` takes precedence over the
+widget's own entry:
 
 ```json
 "bar": {
@@ -80,16 +82,19 @@ precedence over the widget's own entry:
 }
 ```
 
-Options share the entry shape. `showCountBadge` (default `true`): whether
-the picker icon in the bar carries the selected-screens count. `pickerGlyph`
-replaces the picker icon itself (default md-monitor-star; choose from the
-options page, which offers a few monitor-themed Nerd Font glyphs). Toggle/
-choose from the popup — the cog in the panel hero opens a small options
-page, and the choice persists in the widget's own entry. The override takes
-both options too.
+## Options
 
-List entries can be plain strings (case-insensitive substring of model or
-name) or full `{ name, model, serial }` references.
+The cog in the popup's hero opens the options page:
+
+![Bar Hide options page: selection count badge toggle and picker icon choices](docs/plugin-settings-window.png)
+
+- **Selection count badge** — `showCountBadge` (default `true`): shows how
+  many screens carry the bar, next to the picker icon.
+- **Picker icon** — `pickerGlyph` (default `md-monitor-star`): pick one of
+  a few monitor-themed Nerd Font glyphs for the picker button.
+
+Choices persist in the widget's own entry; the `bar.barhide` override
+accepts both options too.
 
 ## How it works
 
