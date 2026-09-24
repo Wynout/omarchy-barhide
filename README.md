@@ -1,8 +1,22 @@
 # Bar Hide
 
-Hide the Omarchy top bar on multiple monitors — pin the top bar to one
-monitor/screen or several. With nothing selected, the native
-bar-on-every-screen behavior applies.
+![Bar Hide: the picker in the bar with the per-screen show/hide popup open](preview.png)
+
+Hide the Omarchy top bar per monitor — pick which screens show the bar
+through a picker in the bar itself. In a multi-monitor setup you pin the
+bar to one monitor or several; unselected screens get no bar, and with
+nothing selected the native bar-on-every-screen behavior applies.
+Selection is live and happens inside the bar — no config edits needed —
+and every other bar widget keeps working as-is.
+
+## Why hide the bar per monitor?
+
+Bar space is precious on mixed screen sizes — a TV or projector that only
+shows video does not need a bar, while your main display does. Bar Hide
+gives you per-screen bar control straight from the native bar: hide it on
+some monitors, show it on others, or leave it everywhere. It is the
+multi-monitor answer to Omarchy's single bar-hidden toggle, which affects
+all screens at once.
 
 Built for Omarchy 4 (Quattro). Bar Hide is an ordinary bar-widget plugin: it
 does not replace the native bar. Every picker instance lives inside its

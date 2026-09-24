@@ -5,14 +5,14 @@
   "version": "0.4.1",
   "author": "wynout",
   "license": "MIT",
-  "description": "Hide Omarchy top bar on multiple monitors - pin the top bar to one monitor/screen or several. With nothing selected, the native bar-on-every-screen behavior applies.",
+  "description": "Hide the Omarchy top bar on selected monitors. Pin the native bar to one screen or several in a multi-monitor setup; unselected screens get no bar. Per-screen live control from the bar tray.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Picker.qml"
   },
   "barWidget": {
     "displayName": "Bar Hide",
-    "description": "Pin the bar to the screens you pick",
+    "description": "Hide/pin the bar per monitor",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
