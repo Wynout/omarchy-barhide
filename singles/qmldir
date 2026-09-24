@@ -1,2 +1,3 @@
 module singles
 singleton BarHideState 1.0 BarHideState.qml
+singleton OptionGlyphs 1.0 OptionGlyphs.qml

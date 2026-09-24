@@ -233,14 +233,13 @@ BarWidget {
     id: button
     anchors.fill: parent
     bar: root.bar
-    // Nerd Font glyph as UTF-16 escapes (U+F0DDC md-monitor-star — the
-    // pinned monitor) — literal astral-plane characters get mangled by
-    // some toolchains, escapes keep the source pure ASCII.
-    // With a selection the widget carries a count badge, so the state is
-    // readable without opening the popup.
+    // Nerd Font glyph via the shared catalog (see OptionGlyphs for why
+    // astral-plane source stays escaped). With a selection the widget
+    // carries a count badge, so the state is readable without opening
+    // the popup. The icon is user-settable: `pickerGlyph` option.
     text: BH.BarHideState.showCountBadge && root.hasTarget
-      ? "\uDB83\uDDDC " + root.selectedRefs.length
-      : "\uDB83\uDDDC"
+      ? BH.BarHideState.pickerGlyph + " " + root.selectedRefs.length
+      : BH.BarHideState.pickerGlyph
     tooltipText: root.hasTarget
       ? "Bar Hide: bar on " + root.selectedRefs.map(Model.refLabel).join(" · ")
       : "Bar Hide: bar on every screen"

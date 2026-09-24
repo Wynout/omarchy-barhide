@@ -524,6 +524,70 @@ Panel {
               }
             }
           }
+
+          // Picker icon: one bordered button per glyph, the current one
+          // highlighted via the kit Button's `selected` state.
+          BorderSurface {
+            id: glyphRowCard
+            width: parent.width
+            implicitHeight: glyphRow.implicitHeight + Style.space(12)
+            radius: Style.cornerRadius
+            color: Color.popups.background
+
+            Column {
+              width: parent.width
+              anchors.verticalCenter: parent.verticalCenter
+              spacing: Style.space(8)
+
+              Text {
+                width: parent.width
+                leftPadding: Style.spacing.rowPaddingX
+                text: "Picker icon"
+                color: root.barForeground
+                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                font.pixelSize: Style.font.body
+                elide: Text.ElideRight
+              }
+
+              Row {
+                id: glyphRow
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: Style.space(6)
+
+                Repeater {
+                  model: BH.OptionGlyphs.choices
+
+                  Button {
+                    required property var modelData
+                    text: modelData.glyph
+                    selected: BH.BarHideState.pickerGlyph === modelData.glyph
+                    tooltipText: "Bar Hide: use " + modelData.name
+                    bordered: true
+                    focusable: false
+                    fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                    fontSize: Style.font.caption
+                    horizontalPadding: Style.space(8)
+                    onClicked: {
+                      if (root.hostWidget && typeof root.hostWidget.applySettings === "function")
+                        root.hostWidget.applySettings({
+                          pickerGlyph: modelData.glyph
+                        })
+                    }
+                  }
+                }
+              }
+
+              Text {
+                width: parent.width
+                leftPadding: Style.spacing.rowPaddingX
+                text: "The icon on the bar's picker button."
+                color: Color.muted
+                font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
+            }
+          }
         }
       }
     }

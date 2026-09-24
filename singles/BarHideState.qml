@@ -46,13 +46,25 @@ Item {
   readonly property bool hasSelection: selectedRefs.length > 0
 
   // Options (resolved next to the selection): showCountBadge controls the
-  // picker button's selection-count badge. Default true — on until a config
-  // key says otherwise.
+  // picker button's selection-count badge; pickerGlyph overrides the badge
+  // icon itself (a Nerd Font glyph string, stored as-is in the entry).
+  // Defaults — badge on, icon md-monitor-star.
   readonly property bool showCountBadge: {
     var v = optionOf(st.overrideEntry, "showCountBadge")
     if (v === null) v = optionOf(st.ownEntryFromConfig, "showCountBadge")
     if (v === null) v = optionOf(st.sandboxEntry, "showCountBadge")
     return v === null ? true : v === true
+  }
+
+  // Glyph strings live in the config as raw UTF-8 (JSON handles astral
+  // codepoints fine); only hand-check the shape so mangled values still let
+  // the default render. Astral-plane source stays escaped via OptionGlyphs.
+  readonly property string pickerGlyph: {
+    var v = optionOf(st.overrideEntry, "pickerGlyph")
+    if (v === null) v = optionOf(st.ownEntryFromConfig, "pickerGlyph")
+    if (v === null) v = optionOf(st.sandboxEntry, "pickerGlyph")
+    var ok = typeof v === "string" && v.length >= 1 && v.length <= 2 && v.trim() !== ""
+    return ok ? v : OptionGlyphs.monitorStar
   }
 
   // Injected-settings fallback for the options page before the config

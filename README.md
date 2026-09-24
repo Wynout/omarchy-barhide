@@ -66,11 +66,13 @@ precedence over the widget's own entry:
 }
 ```
 
-Options share the entry shape. The only option today is `showCountBadge`
-(default `true`): whether the picker icon in the bar carries the
-selected-screens count. Toggle it from the popup — the cog in the panel
-hero opens a small options page, and the choice persists in the widget's
-own entry. The override takes `showCountBadge` too.
+Options share the entry shape. `showCountBadge` (default `true`): whether
+the picker icon in the bar carries the selected-screens count. `pickerGlyph`
+replaces the picker icon itself (default md-monitor-star; choose from the
+options page, which offers a few monitor-themed Nerd Font glyphs). Toggle/
+choose from the popup — the cog in the panel hero opens a small options
+page, and the choice persists in the widget's own entry. The override takes
+both options too.
 
 List entries can be plain strings (case-insensitive substring of model or
 name) or full `{ name, model, serial }` references.

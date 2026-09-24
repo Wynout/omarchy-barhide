@@ -66,8 +66,10 @@ host panel**:
   case-insensitive substrings. Legacy `primary`/`secondary` still read.
   Screens chosen but disconnected stay pending (they return with the monitor).
 - Options are keys next to `monitors` in the same entry
-  (`showCountBadge` in v0.4.1, default true, resolved override > own entry >
-  injected settings). The `applySettings` merge in Picker is what keeps a
+  (`showCountBadge` and `pickerGlyph` in v0.4.1, default true / md-monitor-star,
+  resolved override > own entry > injected settings; glyph catalog in
+  `singles/OptionGlyphs.qml` — astral-plane codepoints stay escaped there).
+  The `applySettings` merge in Picker is what keeps a
   badge write from dropping `monitors` (and vice versa) — updateEntryInline
   replaces entries wholesale. The merge base is the widget's OWN entry, not
   the override: overriding contents must not leak into the widget entry. The
