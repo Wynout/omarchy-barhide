@@ -24,16 +24,19 @@ screen's bar panel and parks that panel when the screen is not selected —
 the same mechanism the native bar-hidden toggle uses. Widgets, layout,
 theming and popouts stay Omarchy-owned.
 
-## Install
+## Install and remove
 
 ```sh
+# install + enable (places the picker in the bar's right section)
 omarchy plugin add https://github.com/wynout/omarchy-barhide.git --enable
 omarchy plugin enable wynout.barhide --section right
 omarchy restart shell
+
+# remove
+omarchy plugin remove wynout.barhide
 ```
 
-Enabling places the picker widget in the bar's right section. (The plugin is
-not a bar replacement, so no `omarchy bar use` is needed.)
+(The plugin is not a bar replacement, so no `omarchy bar use` is needed.)
 
 ## Usage
 
@@ -114,12 +117,6 @@ same write path the built-in clock uses for its format cycling.
 See `AGENTS.md` for the design investigation, the trade-offs, and the
 naming history (shipped v0.2–0.3 as `monobar`, when it still replaced the
 whole bar).
-
-## Remove
-
-```sh
-omarchy plugin remove wynout.barhide
-```
 
 ## Development
 
