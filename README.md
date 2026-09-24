@@ -114,10 +114,6 @@ behavior applies until then.
 The selection write goes through the widget's own `updateEntryInline`, the
 same write path the built-in clock uses for its format cycling.
 
-See `AGENTS.md` for the design investigation, the trade-offs, and the
-naming history (shipped v0.2–0.3 as `monobar`, when it still replaced the
-whole bar).
-
 ## Development
 
 ```sh
