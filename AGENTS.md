@@ -65,6 +65,14 @@ host panel**:
   scored (name +2, serial +1, model +1), ties refuse to guess; strings are
   case-insensitive substrings. Legacy `primary`/`secondary` still read.
   Screens chosen but disconnected stay pending (they return with the monitor).
+- Options are keys next to `monitors` in the same entry
+  (`showCountBadge` in v0.4.1, default true, resolved override > own entry >
+  injected settings). The `applySettings` merge in Picker is what keeps a
+  badge write from dropping `monitors` (and vice versa) — updateEntryInline
+  replaces entries wholesale. The merge base is the widget's OWN entry, not
+  the override: overriding contents must not leak into the widget entry. The
+  options page is the hero cog in Panel.qml (`showOptions` swaps the popup's
+  content column); rows follow the same row-owns-the-click card pattern.
 
 ### Key findings from the investigation (don't re-derive these)
 

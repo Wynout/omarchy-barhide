@@ -74,14 +74,30 @@ BarWidget {
   // layout entry, the same write the built-in clock uses for its format
   // cycling. The shell.json write reloads the bar config in place and the
   // shared state re-resolves for every instance from the same watched file.
+  //
+  // Payloads merge into the current settings (start from the authoritative
+  // entry, not just what this write carries) so a badge toggle never drops
+  // `monitors` and a screen toggle never drops option keys — updateEntryInline
+  // replaces entries wholesale.
   function applySettings(next) {
     var entry = { id: root.moduleName }
-    var payload = {}
+    // Base is the widget's OWN entry (never the bar.barhide override — that
+    // is a hand-edit box and must not leak its contents into the widget's
+    // entry on the next write). The next write's keys win.
+    var base = BH.BarHideState.configReady
+      ? BH.BarHideState.ownEntryFromConfig
+      : root.settings
+    if (Util.isPlainObject(base))
+      for (var bk in base)
+        if (bk !== "id") entry[bk] = base[bk]
     for (var key in next)
-      if (key !== "id") {
-        entry[key] = next[key]
-        payload[key] = next[key]
-      }
+      if (key !== "id") entry[key] = next[key]
+    // Legacy keys the current shape replaced are not carried forward.
+    delete entry.primary
+    delete entry.secondary
+    var payload = {}
+    for (var pk in entry)
+      if (pk !== "id") payload[pk] = entry[pk]
     root.settings = entry
     // Optimistic state update: the popup and every park decision recompute
     // now, before the write even lands. previewEntry writes the same slot
@@ -194,7 +210,13 @@ BarWidget {
   implicitHeight: button.implicitHeight
 
   onBarChanged: injectPanel()
-  onSettingsChanged: injectPanel()
+  onSettingsChanged: {
+    injectPanel()
+    // The injected settings only matter before the config file has been
+    // read; mirror them into the shared state so the options page resolves
+    // `showCountBadge` from the same fallback as everything else.
+    BH.BarHideState.sandboxEntry = root.settings
+  }
 
   Loader {
     id: panelLoader
@@ -214,11 +236,13 @@ BarWidget {
     // Nerd Font glyph as UTF-16 escapes (U+F0DDC md-monitor-star — the
     // pinned monitor) — literal astral-plane characters get mangled by
     // some toolchains, escapes keep the source pure ASCII.
-    text: "\uDB83\uDDDC"
-    // targets may be one or several screens; "single" is just "a selection"
+    // With a selection the widget carries a count badge, so the state is
+    // readable without opening the popup.
+    text: BH.BarHideState.showCountBadge && root.hasTarget
+      ? "\uDB83\uDDDC " + root.selectedRefs.length
+      : "\uDB83\uDDDC"
     tooltipText: root.hasTarget
-      ? "Bar Hide: bar on " + root.targetScreens.length + " of "
-        + (Quickshell.screens || []).length + " screens"
+      ? "Bar Hide: bar on " + root.selectedRefs.map(Model.refLabel).join(" · ")
       : "Bar Hide: bar on every screen"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.togglePanel()

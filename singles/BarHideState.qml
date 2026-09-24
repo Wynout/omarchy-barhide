@@ -45,9 +45,29 @@ Item {
   property var targetScreens: []
   readonly property bool hasSelection: selectedRefs.length > 0
 
-  // Local echo of a selection the picker just applied through its UI; the
-  // pending shell.json write confirms it (and updates every other instance
-  // through the same file watcher).
+  // Options (resolved next to the selection): showCountBadge controls the
+  // picker button's selection-count badge. Default true — on until a config
+  // key says otherwise.
+  readonly property bool showCountBadge: {
+    var v = optionOf(st.overrideEntry, "showCountBadge")
+    if (v === null) v = optionOf(st.ownEntryFromConfig, "showCountBadge")
+    if (v === null) v = optionOf(st.sandboxEntry, "showCountBadge")
+    return v === null ? true : v === true
+  }
+
+  // Injected-settings fallback for the options page before the config
+  // speaks; the picker writes this on onSettingsChanged.
+  property var sandboxEntry: null
+
+  function optionOf(entry, key) {
+    if (!Util.isPlainObject(entry)) return null
+    var v = entry[key]
+    return (v === undefined || v === null) ? null : v
+  }
+
+  // Local echo of a selection/options change the picker just applied through
+  // its UI; the pending shell.json write confirms it (and updates every
+  // other instance through the same file watcher).
   function previewEntry(entry) {
     st.ownEntryFromConfig = entry
     st.refreshSelection()

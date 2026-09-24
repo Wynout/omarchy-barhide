@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Commons
 import qs.Ui
+import "./singles" as BH
 import "Model.js" as Model
 
 // Bar Hide's screen picker popup. Lists every connected screen with its
@@ -19,6 +20,9 @@ Panel {
 
   property var anchorItem: null
   property var hostWidget: null
+
+  // The options page swap inside the popup; the hero cog toggles it.
+  property bool showOptions: false
 
   // The bar tracks the widget mounted in its slot — Picker.qml — not this
   // nested panel. Everything the bar identifies a panel by has to be that
@@ -120,6 +124,19 @@ Panel {
       hostWidget.applySettings({ monitors: [] })
   }
 
+  // "1920×1080", or "" when the shell does not expose the geometry.
+  function resolutionLabel(screen) {
+    var w = 0
+    var h = 0
+    if (screen && screen.width > 0) w = screen.width
+    if (screen && screen.height > 0) h = screen.height
+    return w > 0 && h > 0 ? w + "×" + h : ""
+  }
+
+  // The edge a screen's bar sits on, per the native bar's position.
+  readonly property string barEdge: root.bar && root.bar.position
+    ? root.bar.position : "top"
+
   function open() {
     root.controller.show()
   }
@@ -162,19 +179,50 @@ Panel {
       anchors.rightMargin: Style.spacing.rowPaddingX
       spacing: Style.space(10)
 
-      // Bar-state dot: accent when the screen carries the bar, dim when not.
-      Rectangle {
-        id: statusDot
-        width: Style.space(7)
-        height: Style.space(7)
-        radius: width / 2
-        anchors.verticalCenter: parent.verticalCenter
-        color: rowRoot.onBar ? Color.accent : Qt.darker(root.barForeground, 1.6)
-        Behavior on color { ColorAnimation { duration: 120 } }
+      // A tiny monitor with placeholder bars: drawn per row so the list
+      // shows where the bar sits (top/bottom/left/right per the native bar's
+      // position) and which screens currently carry one — accent-lit when
+      // on, dimmed when parked.
+      Item {
+        id: miniMonitor
+        width: Style.space(46)
+        height: Style.space(30)
+        opacity: rowRoot.onBar ? 1.0 : 0.5
+        Behavior on opacity { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+
+        Rectangle {
+          anchors.fill: parent
+          color: "transparent"
+          radius: Style.space(3)
+          border.width: 1
+          border.color: rowRoot.onBar
+            ? Color.accent : Qt.darker(root.barForeground, 1.3)
+          Behavior on border.color { ColorAnimation { duration: 120 } }
+        }
+
+        Rectangle {
+          id: miniBar
+          readonly property bool vert: root.barEdge === "left" || root.barEdge === "right"
+
+          anchors.margins: Style.space(3)
+          anchors.horizontalCenter: root.barEdge === "top" || root.barEdge === "bottom"
+            ? parent.horizontalCenter : undefined
+          anchors.verticalCenter: vert ? parent.verticalCenter : undefined
+          anchors.top: root.barEdge === "top" ? parent.top : undefined
+          anchors.bottom: root.barEdge === "bottom" ? parent.bottom : undefined
+          anchors.left: root.barEdge === "left" ? parent.left : undefined
+          anchors.right: root.barEdge === "right" ? parent.right : undefined
+          width: vert ? Style.space(3) : parent.width - anchors.margins * 2
+          height: vert ? parent.height - anchors.margins * 2 : Style.space(3)
+          radius: Style.space(1)
+          color: rowRoot.onBar ? Color.accent : Qt.darker(root.barForeground, 1.4)
+          opacity: rowRoot.onBar ? 1.0 : 0.4
+          Behavior on color { ColorAnimation { duration: 120 } }
+        }
       }
 
       Column {
-        width: rowLayout.width - statusDot.width - rowToggle.implicitWidth - rowLayout.spacing * 2
+        width: rowLayout.width - miniMonitor.width - rowToggle.implicitWidth - rowLayout.spacing * 2
         spacing: Style.space(1)
         anchors.verticalCenter: parent.verticalCenter
 
@@ -190,7 +238,9 @@ Panel {
 
         Text {
           width: parent.width
-          text: rowRoot.modelData.model || "unknown model"
+          text: (rowRoot.modelData.model || "unknown model")
+            + (root.resolutionLabel(rowRoot.modelData) !== ""
+              ? " · " + root.resolutionLabel(rowRoot.modelData) : "")
           color: Color.muted
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
@@ -216,8 +266,9 @@ Panel {
     }
   }
 
-  // A selected reference whose monitor is away. Muted card; the only action
-  // is forgetting it.
+  // A selected reference whose monitor is away. Muted card with an urgent
+  // left edge so the "screen missing, bar pending" state is visible at a
+  // glance; the only action is forgetting it.
   component UnresolvedRow: BorderSurface {
     id: unresolvedRoot
 
@@ -227,14 +278,14 @@ Panel {
     implicitHeight: unresolvedLayout.implicitHeight + Style.space(10)
     radius: Style.cornerRadius
     color: Style.normalFillFor(root.barForeground, Color.accent)
-    borderSpec: Border.controlSpec("normal", root.barForeground, Color.accent)
+    borderSpec: Border.withWidth(Border.flat(Color.urgent, 0), "0 0 0 2")
 
     Row {
       id: unresolvedLayout
       anchors.left: parent.left
       anchors.right: parent.right
       anchors.verticalCenter: parent.verticalCenter
-      anchors.leftMargin: Style.spacing.rowPaddingX
+      anchors.leftMargin: Style.spacing.rowPaddingX + 2
       anchors.rightMargin: Style.spacing.rowPaddingX
       spacing: Style.space(8)
 
@@ -286,16 +337,43 @@ Panel {
         width: parent.width
         spacing: Style.space(10)
 
-        // ---- Hero: glyph · title · hidden read-out · on/total pill
+        // ---- Hero: glyph · title · hidden read-out · on/total pill · cog
         PanelHero {
           width: parent.width
           title: "Bar Hide"
-          meta: root.hiddenNames.length
-            ? "hidden: " + root.hiddenNames.join(", ")
-            : "none hidden"
+          meta: root.showOptions
+            ? "options"
+            : (root.hiddenNames.length
+              ? "hidden: " + root.hiddenNames.join(", ")
+              : "none hidden")
           detail: root.onCount + "/" + (Quickshell.screens || []).length
           foreground: root.barForeground
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+
+          // The cog: flips the popup between the screen list and the options
+          // page (v0.4.1: badge visibility; more settings can follow).
+          // Alignment: the kit centers the trailing control against the
+          // whole hero (title row + meta caption). The detail pill sits on
+          // the title row, so the cog must ride up by half the meta caption
+          // + row spacing to share its center line.
+          trailingControl: Component {
+            Item {
+              implicitWidth: heroCog.implicitWidth
+              implicitHeight: heroCog.implicitHeight
+
+              PanelActionButton {
+                id: heroCog
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: -Style.space(6)
+                iconText: root.showOptions ? "\uDB81\uDC11" : "\uDB81\uDC93"
+                tooltipText: root.showOptions ? "back to screens" : "options"
+                foreground: Color.muted
+                hoverColor: Color.accent
+                fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+                onClicked: root.showOptions = !root.showOptions
+              }
+            }
+          }
 
           iconComponent: Text {
             textFormat: Text.PlainText
@@ -310,6 +388,12 @@ Panel {
         }
 
         PanelSeparator {}
+
+        // ---- Screens view
+        Column {
+          visible: !root.showOptions
+          width: parent.width
+          spacing: Style.space(10)
 
         // ---- Connected screens
         PanelSectionHeader {
@@ -360,6 +444,86 @@ Panel {
           opacity: enabled ? 1.0 : 0.4
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
           onClicked: root.clearAll()
+        }
+        }
+
+        // ---- Options page (hero cog): whole-row toggle cards, same
+        // row-owns-the-click pattern as the screen list.
+        Column {
+          visible: root.showOptions
+          width: parent.width
+          spacing: Style.space(10)
+
+          PanelSectionHeader {
+            text: "Options"
+            foreground: root.barForeground
+            fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          }
+
+          BorderSurface {
+            id: badgeRow
+            width: parent.width
+            implicitHeight: badgeRowLayout.implicitHeight + Style.space(12)
+            radius: Style.cornerRadius
+            color: Style.controlFill(false, badgeMouse.containsMouse, root.barForeground, Color.accent)
+            borderSpec: Border.controlSpec(badgeMouse.containsMouse ? "hover-cursor" : "normal", root.barForeground, Color.accent)
+            Behavior on color { ColorAnimation { duration: 100 } }
+
+            Row {
+              id: badgeRowLayout
+              anchors.left: parent.left
+              anchors.right: parent.right
+              anchors.verticalCenter: parent.verticalCenter
+              anchors.leftMargin: Style.spacing.rowPaddingX
+              anchors.rightMargin: Style.spacing.rowPaddingX
+              spacing: Style.space(10)
+
+              Column {
+                width: parent.width - badgeToggle.implicitWidth - parent.spacing
+                spacing: Style.space(1)
+                anchors.verticalCenter: parent.verticalCenter
+
+                Text {
+                  width: parent.width
+                  text: "Selection count badge"
+                  color: root.barForeground
+                  font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                  font.pixelSize: Style.font.body
+                  elide: Text.ElideRight
+                }
+
+                Text {
+                  width: parent.width
+                  text: "Show how many screens carry the bar, next to the picker icon."
+                  color: Color.muted
+                  font.family: root.bar ? root.bar.fontFamily : Style.font.family
+                  font.pixelSize: Style.font.caption
+                  wrapMode: Text.WordWrap
+                }
+              }
+
+              ToggleSwitch {
+                id: badgeToggle
+                checked: BH.BarHideState.showCountBadge
+                interactive: false
+                cursorRing: false
+                anchors.verticalCenter: parent.verticalCenter
+              }
+            }
+
+            MouseArea {
+              id: badgeMouse
+              anchors.fill: parent
+              hoverEnabled: true
+              cursorShape: Qt.PointingHandCursor
+              onClicked: {
+                if (root.hostWidget && typeof root.hostWidget.applySettings === "function")
+                  root.hostWidget.applySettings({
+                    showCountBadge: !BH.BarHideState.showCountBadge
+                  })
+              }
+            }
+          }
         }
       }
     }

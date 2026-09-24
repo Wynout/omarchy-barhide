@@ -60,10 +60,17 @@ precedence over the widget's own entry:
 ```json
 "bar": {
   "barhide": {
-    "monitors": ["ultragear", "eDP-1"]
+    "monitors": ["ultragear", "eDP-1"],
+    "showCountBadge": false
   }
 }
 ```
+
+Options share the entry shape. The only option today is `showCountBadge`
+(default `true`): whether the picker icon in the bar carries the
+selected-screens count. Toggle it from the popup — the cog in the panel
+hero opens a small options page, and the choice persists in the widget's
+own entry. The override takes `showCountBadge` too.
 
 List entries can be plain strings (case-insensitive substring of model or
 name) or full `{ name, model, serial }` references.
