@@ -37,10 +37,8 @@ not a bar replacement, so no `omarchy bar use` is needed.)
 
 ## Usage
 
-Click the picker icon in the bar to open the screen list. Each connected
-screen gets a **show** / **hide** toggle:
-
-![Bar Hide popup: per-screen show/hide toggles, hidden screens listed in the header, "show on all" at the bottom](docs/plugin-main-window.png)
+Click the picker icon in the bar to open the screen list (screenshot at the
+top of this page). Each connected screen gets a **show** / **hide** toggle:
 
 - With screens selected, **show** adds a screen to the bar, **hide** removes
   it, and **show on all** clears the selection so the bar covers everything.
