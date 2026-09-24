@@ -304,7 +304,7 @@ Panel {
 
         // ---- Connected screens
         PanelSectionHeader {
-          text: "Screens"
+          text: "Toggle bars per screen"
           foreground: root.barForeground
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
         }
@@ -346,6 +346,7 @@ Panel {
 
         Button {
           text: "show on all"
+          bordered: true
           enabled: root.selectedRefs.length > 0
           opacity: enabled ? 1.0 : 0.4
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
