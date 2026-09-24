@@ -47,6 +47,10 @@ BarWidget {
     if (panelLoader.item) panelLoader.item.toggle()
   }
 
+  function toggle() {
+    togglePanel()
+  }
+
   function closeForPopoutSwitch() {
     if (panelLoader.item) panelLoader.item.closeForPopoutSwitch()
   }
