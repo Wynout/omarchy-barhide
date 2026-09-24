@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "wynout.barhide",
   "name": "Bar Hide",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "author": "wynout",
   "license": "MIT",
   "description": "Hide Omarchy top bar on multiple monitors - pin the top bar to one monitor/screen or several. With nothing selected, the native bar-on-every-screen behavior applies.",

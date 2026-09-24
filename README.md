@@ -74,7 +74,13 @@ Each picker instance resolves its selection from the live shell.json and
 parks its own host panel when that screen is not selected: a negative margin
 past the active edge plus `ExclusionMode.Ignore`, the mechanism the native
 bar-hidden toggle uses. Parking includes the global `omarchy toggle bar off`
-flag, so that toggle keeps working on top of Bar Hide.
+flag, so that toggle keeps working on top of Bar Hide. All pickers share one
+state object (`singles/BarHideState.qml`): a single shell.json watcher, one
+bar-off probe (re-probed on a 15s fallback timer, since the directory watch
+can go quiet after rapid flag changes), and one resolved selection — so
+screens cannot disagree about park state. Parking decisions wait until the
+config file has been read once; at startup the native bar-on-every-screen
+behavior applies until then.
 
 The selection write goes through the widget's own `updateEntryInline`, the
 same write path the built-in clock uses for its format cycling.

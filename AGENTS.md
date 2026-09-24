@@ -8,7 +8,11 @@ screen's panel when that screen is not selected. The bar is Omarchy's native
 bar; Bar Hide only controls which screens carry it.
 
 Entry points: `Picker.qml` (bar widget + parking mechanism), `Panel.qml`
-(screen-selection popup), `Model.js` (screen-reference matching).
+(screen-selection popup), `Model.js` (screen-reference matching), and
+`singles/BarHideState.qml` (shared state singleton, v0.4.1: one shell.json
+FileView, one bar-off probe + watcher + 15s periodic re-probe for all picker
+instances — before that, per-screen watchers could strand a screen and make
+screens disagree about park state).
 
 (Naming history: shipped v0.2–0.3 as `monobar` / MonoBar, when it still
 replaced the whole bar; renamed to `barhide` / Bar Hide in v0.4 when it
@@ -42,8 +46,21 @@ host panel**:
   off-screen instead of unmapping it).
 - Global `bar-off` toggle respected via the same bash-probe + directory
   watcher the native bar uses (`~/.local/state/omarchy/toggles/bar-off`).
+  v0.4.1: the shared state re-probes on a 15s Timer as a fallback, because
+  the directory watch can permanently stop delivering events after flag
+  changes land in quick succession (the native bar solves the same problem
+  with an IPC nudge; a plugin has no toggle-hook to receive one).
 - Selection resolution order: `bar.barhide` override in shell.json >
-  the widget's own `bar.layout` entry > injected `settings`.
+  the widget's own `bar.layout` entry > injected `settings` (popup display
+  only; parking stays "show all" until the config has been read once —
+  `configReady` in the shared state gates parking so startup can't park
+  from incomplete fallback data). The shared state also keeps the last
+  good parse if shell.json is caught mid-write.
+- Park Bindings own the host panel's exclusionMode/margins while alive
+  (constant-true `when`); `Component.onDestruction` flips `teardown`,
+  deactivating the Bindings so RestoreBindingOrValue restores the native
+  values *before* the Bindings are destroyed — a widget removed while
+  parked would otherwise strand its panel off-screen.
 - `monitors` refs match `Model.js` rules: structured `{ name, model, serial }`
   scored (name +2, serial +1, model +1), ties refuse to guess; strings are
   case-insensitive substrings. Legacy `primary`/`secondary` still read.

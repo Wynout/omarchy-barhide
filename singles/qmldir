@@ -1,0 +1,2 @@
+module singles
+singleton BarHideState 1.0 BarHideState.qml

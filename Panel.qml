@@ -34,10 +34,6 @@ Panel {
   property var selectedRefs: []
   property var targetScreens: []
 
-  // The connected subset, resolved with the same matcher the bar itself
-  // uses — deduped by output name.
-  readonly property var resolvedTargets: targetScreens
-
   function captureScreen(screen) {
     return {
       name: String(screen.name || ""),
@@ -46,9 +42,22 @@ Panel {
     }
   }
 
+  // Whether a stored reference identifies this screen — using the same
+  // resolution semantics as parking (Model.findScreen against the live
+  // screens), not just the stored-field echo of refMatches. refMatches alone
+  // lied after a re-plug: a monitor moved to another port changes its name,
+  // the bar correctly carried it via serial/model scoring, but the row read
+  // "off" and toggling it stacked a second, near-duplicate ref.
+  function refResolvesTo(ref, screen) {
+    if (!ref || !screen) return false
+    if (Model.refMatches(ref, screen)) return true
+    var resolved = Model.findScreen((Quickshell.screens || []), ref)
+    return resolved === screen
+  }
+
   function isSelected(screen) {
     for (var i = 0; i < selectedRefs.length; i++)
-      if (Model.refMatches(selectedRefs[i], screen)) return true
+      if (refResolvesTo(selectedRefs[i], screen)) return true
     return false
   }
 
@@ -69,7 +78,7 @@ Panel {
       }
     } else {
       for (var j = 0; j < selectedRefs.length; j++)
-        if (!Model.refMatches(selectedRefs[j], screen)) list.push(selectedRefs[j])
+        if (!refResolvesTo(selectedRefs[j], screen)) list.push(selectedRefs[j])
       if (!isSelected(screen)) list.push(captureScreen(screen))
     }
     if (hostWidget && typeof hostWidget.applySettings === "function")
