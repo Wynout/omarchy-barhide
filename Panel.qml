@@ -530,11 +530,29 @@ Panel {
           BorderSurface {
             id: glyphRowCard
             width: parent.width
-            implicitHeight: glyphRow.implicitHeight + Style.space(12)
+            // Size to the whole content column (title + sheet + caption),
+            // not just the glyph row — otherwise the Native centering lets
+            // the taller column spill over the card above and its own
+            // bottom edge.
+            implicitHeight: glyphCardContent.implicitHeight + Style.space(14)
             radius: Style.cornerRadius
-            color: Color.popups.background
+            // Same card treatment as the count-badge row: normal border at
+            // rest, hover-cursor border under the mouse. Palette follows
+            // the bar foreground like the row above it.
+            color: Style.controlFill(false, glyphCardHover.containsMouse, root.barForeground, Color.accent)
+            borderSpec: Border.controlSpec(glyphCardHover.containsMouse ? "hover-cursor" : "normal", root.barForeground, Color.accent)
+            Behavior on color { ColorAnimation { duration: 100 } }
+
+            MouseArea {
+              id: glyphCardHover
+              // Hover/sensor only, below the buttons card-owning click
+              // pattern lives on the glyph buttons themselves.
+              anchors.fill: parent
+              hoverEnabled: true
+            }
 
             Column {
+              id: glyphCardContent
               width: parent.width
               anchors.verticalCenter: parent.verticalCenter
               spacing: Style.space(8)
@@ -559,14 +577,24 @@ Panel {
 
                   Button {
                     required property var modelData
-                    text: modelData.glyph
+                    // Icon slot, not the text slot: the kit bolds and
+                    // remetricizes `text` when selected, which mis-centers
+                    // a Nerd Font glyph; `iconText` renders like every
+                    // other icon in the kit.
+                    iconText: modelData.glyph
+                    iconSize: Style.font.icon
                     selected: BH.BarHideState.pickerGlyph === modelData.glyph
                     tooltipText: "Bar Hide: use " + modelData.name
                     bordered: true
                     focusable: false
                     fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-                    fontSize: Style.font.caption
-                    horizontalPadding: Style.space(8)
+                    // Uniform square sheet: content-sized buttons take the
+                    // metrics of each glyph and go ragged.
+                    readonly property real _sheetSize:
+                      Style.font.icon + Style.spacing.controlPaddingX * 2
+                    implicitWidth: _sheetSize
+                    implicitHeight: _sheetSize
+                    horizontalPadding: 0
                     onClicked: {
                       if (root.hostWidget && typeof root.hostWidget.applySettings === "function")
                         root.hostWidget.applySettings({
