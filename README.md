@@ -34,6 +34,7 @@ omarchy restart shell
 
 # remove
 omarchy plugin remove wynout.barhide
+omarchy restart shell
 ```
 
 (The plugin is not a bar replacement, so no `omarchy bar use` is needed.)
