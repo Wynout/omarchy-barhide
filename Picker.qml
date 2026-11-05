@@ -150,8 +150,32 @@ BarWidget {
   // independent of the config file.
   readonly property bool parked: BH.BarHideState.barHidden
     || (BH.BarHideState.configReady && !root.shouldShow(root.hostScreen))
+  // Whether the native bar panel spans its whole screen. Omarchy 4.5's bar
+  // redesign (Bar.qml: BarPanel) made the panel a full-screen transparent
+  // surface (implicitHeight = screen height) with the strip drawn inside;
+  // before that, the panel WAS the strip (implicitHeight = barSize). Older
+  // versions never published a compatibility flag, so detect the shape:
+  // anything taller than the strip by a comfortable margin is a spanning
+  // panel.
+  readonly property bool spanningPanel: root.hostWindow && root.bar
+    && root.hostWindow.implicitHeight > 0
+    && root.bar.barSize > 0
+    && root.hostWindow.implicitHeight > root.bar.barSize + 4
+
+  // Adaptive maintenance note: `spanningPanel` (and the Auto/Normal switch
+  // and the park-offset choice it drives below) exists only for Omarchy 4.0
+  // – 4.4 compatibility. Once this plugin declares Omarchy 4.5+ as its
+  // minimum (or 4.0.x support is retired), delete `spanningPanel`, pin the
+  // exclusive Binding to Normal and the park offset to
+  // -hostWindow.implicitHeight without the conditional, and fold this note
+  // into AGENTS.md history. Until then the plugin stays dual-mode.
   readonly property real parkedOffset: root.parked
-    ? -Math.max(root.bar && root.bar.barSize > 0 ? root.bar.barSize : 26, 26)
+    // Park by the panel's full implicit size, the same distance the native
+    // bar-hidden toggle uses: in v4.5 that is the whole screen (parking by
+    // the strip's thickness would still cover the workspace), on older bars
+    // the panel is the strip, so its size is the whole panel.
+    ? -(root.spanningPanel && root.hostWindow ? root.hostWindow.implicitHeight
+       : Math.max(root.bar && root.bar.barSize > 0 ? root.bar.barSize : 26, 26))
     : 0
 
   // While parked, these Bindings own the host panel's exclusion mode and
@@ -171,7 +195,13 @@ BarWidget {
   Binding {
     target: root.hostWindow
     property: "exclusionMode"
-    value: root.parked ? ExclusionMode.Ignore : ExclusionMode.Auto
+    // Adaptive (see spanningPanel above): a spanning panel (v4.5+) sets its
+    // own explicit strip-sized exclusive zone, so Normal is the native move;
+    // the older strip panel derived its reservation from Auto. Ignore is the
+    // park. Without this Binding the native values stand whenever parked is
+    // false, so the split only matters while this widget owns the panel.
+    value: root.parked ? ExclusionMode.Ignore
+      : (root.spanningPanel ? ExclusionMode.Normal : ExclusionMode.Auto)
     when: root.hostWindow !== null && "exclusionMode" in root.hostWindow && !root.teardown
     restoreMode: Binding.RestoreBindingOrValue
   }

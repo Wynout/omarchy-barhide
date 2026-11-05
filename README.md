@@ -24,6 +24,20 @@ screen's bar panel and parks that panel when the screen is not selected —
 the same mechanism the native bar-hidden toggle uses. Widgets, layout,
 theming and popouts stay Omarchy-owned.
 
+### Version compatibility
+
+Omarchy 4.5 redesigned the bar: its panel used to be the 26px strip itself
+and now spans the whole screen, with the strip drawn inside it. Bar Hide
+detects the panel shape and adapts in both directions — park distance and
+exclusion mode switch accordingly — so 0.5.0 works on Omarchy 4.0–4.4 and
+4.5+ alike. 0.4.1 and older only work before 4.5 (on 4.5 they leave the bar
+unreserved, with tiled windows sliding under it).
+
+Maintenance note: the dual-mode plumbing (`spanningPanel` in `Picker.qml`)
+is a compatibility shim, kept until older Omarchy is retired. When 4.5+ is
+the floor, delete `spanningPanel`, pin the exclusion Binding to `Normal` and
+the park offset to `-hostWindow.implicitHeight`.
+
 ## Install and remove
 
 ```sh
