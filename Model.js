@@ -1,4 +1,4 @@
-// Shared screen-matching helpers for Bar Hide. Pure functions so both the
+// Shared screen-matching helpers for Hide Bar. Pure functions so both the
 // bar and the picker panel agree on how a stored reference identifies a
 // live screen.
 //

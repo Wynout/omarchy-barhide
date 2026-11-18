@@ -1,6 +1,6 @@
-# Bar Hide
+# Hide Bar
 
-![Bar Hide: the picker in the bar with the per-screen show/hide popup open](preview.png)
+![Hide Bar: the picker in the bar with the per-screen show/hide popup open](preview.png)
 
 Hide the Omarchy top bar per monitor — pick which screens show the bar
 through a picker in the bar itself. In a multi-monitor setup you pin the
@@ -12,13 +12,13 @@ and every other bar widget keeps working as-is.
 ## Why hide the bar per monitor?
 
 Bar space is precious on mixed screen sizes — a TV or projector that only
-shows video does not need a bar, while your main display does. Bar Hide
+shows video does not need a bar, while your main display does. Hide Bar
 gives you per-screen bar control straight from the native bar: hide it on
 some monitors, show it on others, or leave it everywhere. It is the
 multi-monitor answer to Omarchy's single bar-hidden toggle, which affects
 all screens at once.
 
-Built for Omarchy 4 (Quattro). Bar Hide is an ordinary bar-widget plugin: it
+Built for Omarchy 4 (Quattro). Hide Bar is an ordinary bar-widget plugin: it
 does not replace the native bar. Every picker instance lives inside its
 screen's bar panel and parks that panel when the screen is not selected —
 the same mechanism the native bar-hidden toggle uses. Widgets, layout,
@@ -27,7 +27,7 @@ theming and popouts stay Omarchy-owned.
 ### Version compatibility
 
 Omarchy 4.5 redesigned the bar: its panel used to be the 26px strip itself
-and now spans the whole screen, with the strip drawn inside it. Bar Hide
+and now spans the whole screen, with the strip drawn inside it. Hide Bar
 detects the panel shape and adapts in both directions — park distance and
 exclusion mode switch accordingly — so 0.5.0 works on Omarchy 4.0–4.4 and
 4.5+ alike. 0.4.1 and older only work before 4.5 (on 4.5 they leave the bar
@@ -75,7 +75,7 @@ Screens you showed that are currently disconnected stay in the list (their
 bar returns when they do) and show up in a "not connected" section with a
 **forget** button.
 
-Settings persist in Bar Hide's own entry in `bar.layout` inside
+Settings persist in Hide Bar's own entry in `bar.layout` inside
 `~/.config/omarchy/shell.json`:
 
 ```json
@@ -110,7 +110,7 @@ widget's own entry:
 
 The cog in the popup's hero opens the options page:
 
-![Bar Hide options page: selection count badge toggle and picker icon choices](docs/plugin-settings-window.png)
+![Hide Bar options page: selection count badge toggle and picker icon choices](docs/plugin-settings-window.png)
 
 - **Selection count badge** — `showCountBadge` (default `true`): shows how
   many screens carry the bar, next to the picker icon.
@@ -126,7 +126,7 @@ Each picker instance resolves its selection from the live shell.json and
 parks its own host panel when that screen is not selected: a negative margin
 past the active edge plus `ExclusionMode.Ignore`, the mechanism the native
 bar-hidden toggle uses. Parking includes the global `omarchy toggle bar off`
-flag, so that toggle keeps working on top of Bar Hide. All pickers share one
+flag, so that toggle keeps working on top of Hide Bar. All pickers share one
 state object (`singles/BarHideState.qml`): a single shell.json watcher, one
 bar-off probe (re-probed on a 15s fallback timer, since the directory watch
 can go quiet after rapid flag changes), and one resolved selection — so

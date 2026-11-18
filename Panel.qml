@@ -5,7 +5,7 @@ import qs.Ui
 import "./singles" as BH
 import "Model.js" as Model
 
-// Bar Hide's screen picker popup. Lists every connected screen with its
+// Hide Bar's screen picker popup. Lists every connected screen with its
 // identity, and toggles which of them carry the bar. Settings persist in the
 // picker's own bar.layout entry via updateEntryInline, which is the same
 // write path the built-in clock uses for its format cycling.
@@ -340,7 +340,7 @@ Panel {
         // ---- Hero: glyph · title · hidden read-out · on/total pill · cog
         PanelHero {
           width: parent.width
-          title: "Bar Hide"
+          title: "Hide Bar"
           meta: root.showOptions
             ? "options"
             : (root.hiddenNames.length
@@ -584,7 +584,7 @@ Panel {
                     iconText: modelData.glyph
                     iconSize: Style.font.icon
                     selected: BH.BarHideState.pickerGlyph === modelData.glyph
-                    tooltipText: "Bar Hide: use " + modelData.name
+                    tooltipText: "Hide Bar: use " + modelData.name
                     bordered: true
                     focusable: false
                     fontFamily: root.bar ? root.bar.fontFamily : Style.font.family

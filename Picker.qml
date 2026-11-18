@@ -6,7 +6,7 @@ import qs.Ui
 import "./singles" as BH
 import "Model.js" as Model
 
-// Bar Hide's picker: a bar button that opens the screen-selection panel, and
+// Hide Bar's picker: a bar button that opens the screen-selection panel, and
 // the whole screen-selection mechanism.
 //
 // Each connected screen builds its own picker instance inside that screen's
@@ -275,8 +275,8 @@ BarWidget {
       ? BH.BarHideState.pickerGlyph + " " + root.selectedRefs.length
       : BH.BarHideState.pickerGlyph
     tooltipText: root.hasTarget
-      ? "Bar Hide: bar on " + root.selectedRefs.map(Model.refLabel).join(" · ")
-      : "Bar Hide: bar on every screen"
+      ? "Hide Bar: bar on " + root.selectedRefs.map(Model.refLabel).join(" · ")
+      : "Hide Bar: bar on every screen"
     onPressed: function(buttonCode) {
       if (buttonCode === Qt.LeftButton) root.togglePanel()
     }

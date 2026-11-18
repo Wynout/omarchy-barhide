@@ -5,7 +5,7 @@ import Quickshell.Io
 import qs.Commons
 import "../Model.js" as Model
 
-// Bar Hide's shared state: one copy per shell engine, used by every picker
+// Hide Bar's shared state: one copy per shell engine, used by every picker
 // instance on every screen.
 //
 // Before v0.4.1 each picker instance owned its own shell.json FileView, its
@@ -28,7 +28,7 @@ Item {
   // definitively absent). Parking decisions are gated on this so startup
   // never parks from stale fallback data: until the file speaks, the native
   // "bar on every screen" behavior applies, matching what the user sees at
-  // that moment with no Bar Hide active.
+  // that moment with no Hide Bar active.
   property bool configReady: false
 
   // The `bar.barhide` hand-edit override and the widget's own bar.layout
