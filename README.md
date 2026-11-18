@@ -33,6 +33,14 @@ exclusion mode switch accordingly — so 0.5.0 works on Omarchy 4.0–4.4 and
 4.5+ alike. 0.4.1 and older only work before 4.5 (on 4.5 they leave the bar
 unreserved, with tiled windows sliding under it).
 
+0.5.1 fixes the same release moving the goalposts on the other axis: 4.5
+added the `centerBegin`/`centerEnd`/`tray` bar sections, and a widget parked
+in one of them (e.g. the tray) was invisible to the shared state's parser,
+which still scanned only `left`/`center`/`right`. Its selection then parsed
+as empty — the plugin's "bar on every screen" fallback — and no selection
+made in the picker could stick. 0.5.1 reads the section list from the
+native `Util.barSections` instead of a hardcoded array.
+
 Maintenance note: the dual-mode plumbing (`spanningPanel` in `Picker.qml`)
 is a compatibility shim, kept until older Omarchy is retired. When 4.5+ is
 the floor, delete `spanningPanel`, pin the exclusion Binding to `Normal` and

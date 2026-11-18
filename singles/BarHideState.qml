@@ -113,7 +113,11 @@ Item {
       var cfg = JSON.parse(String(text || "{}"))
       if (Util.isPlainObject(cfg.bar) && Util.isPlainObject(cfg.bar.barhide))
         override = cfg.bar.barhide
-      var sections = ["left", "center", "right"]
+      // Track the native shell's canonical section list (qs.Commons Util):
+      // Omarchy 4.5 added centerBegin/centerEnd/tray, and a widget living in
+      // one of the new sections (e.g. the tray) must still be found here or
+      // its selection parses as empty, i.e. "bar on every screen".
+      var sections = Util.barSections
       var layout = Util.isPlainObject(cfg.bar) && Util.isPlainObject(cfg.bar.layout)
         ? cfg.bar.layout : {}
       for (var s = 0; s < sections.length && own === null; s++) {
