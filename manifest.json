@@ -2,17 +2,17 @@
   "schemaVersion": 1,
   "id": "wynout.barhide",
   "name": "Hide Bar",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "author": "wynout",
   "license": "MIT",
-  "description": "Hide the Omarchy top bar on selected monitors. Pin the native bar to one screen or several in a multi-monitor setup; unselected screens get no bar. Per-screen autohide control from the bar tray.",
+  "description": "Show or hide bars and left, center, and right zones per monitor, with auto-hide controls.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Picker.qml"
   },
   "barWidget": {
     "displayName": "Hide Bar",
-    "description": "Hide/pin the bar per monitor",
+    "description": "Show or hide per-monitor bars and zones; configure auto-hide behavior",
     "category": "System",
     "allowMultiple": false,
     "defaultSection": "right"
