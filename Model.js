@@ -10,6 +10,14 @@
 // Empty reference fields never take part in a match, so a screen captured
 // without a serial still matches after the move to another port.
 
+function copyObject(source) {
+  var out = {}
+  if (!source || typeof source !== "object" || Array.isArray(source)) return out
+  for (var key in source)
+    if (Object.prototype.hasOwnProperty.call(source, key)) out[key] = source[key]
+  return out
+}
+
 function eqField(want, have, caseInsensitive) {
   if (want === undefined || want === null || String(want) === "") return false
   if (have === undefined || have === null || String(have) === "") return false
@@ -100,4 +108,60 @@ function refLabel(ref) {
   if (ref.name) parts.push(String(ref.name))
   if (ref.model) parts.push(String(ref.model))
   return parts.length ? parts.join(" · ") : "not set"
+}
+
+var SECTION_KEYS = ["left", "center", "right"]
+
+// Per-screen section settings default to visible. A record stores only an
+// override plus the same structured monitor reference used by `monitors`.
+function sectionZonesForScreen(entries, screen, screens) {
+  var result = { left: true, center: true, right: true }
+  if (!Array.isArray(entries) || !screen) return result
+  for (var i = 0; i < entries.length; i++) {
+    var record = entries[i]
+    if (!record || typeof record !== "object"
+        || findScreen(screens || [], record.screen) !== screen) continue
+    for (var j = 0; j < SECTION_KEYS.length; j++) {
+      var key = SECTION_KEYS[j]
+      result[key] = record[key] !== false
+    }
+    return result
+  }
+  return result
+}
+
+// Update one section override. Remove a screen record again when all three
+// sections are visible, keeping the setting compact.
+function setSectionZone(entries, screen, key, shown, screens) {
+  if (!screen || SECTION_KEYS.indexOf(String(key)) === -1) return null
+  var list = Array.isArray(entries) ? entries : []
+  var out = []
+  var record = null
+  for (var i = 0; i < list.length; i++) {
+    var current = list[i]
+    if (current && typeof current === "object"
+        && findScreen(screens || [], current.screen) === screen) {
+      if (record === null) record = copyObject(current)
+    } else if (current && typeof current === "object") {
+      out.push(copyObject(current))
+    }
+  }
+  if (record === null) {
+    record = {
+      screen: {
+        name: String(screen.name || ""),
+        model: String(screen.model || ""),
+        serial: String(screen.serial || "")
+      },
+      left: true,
+      center: true,
+      right: true
+    }
+  }
+  record[String(key)] = shown === true
+  var allShown = true
+  for (var j = 0; j < SECTION_KEYS.length; j++)
+    if (record[SECTION_KEYS[j]] === false) allShown = false
+  if (!allShown) out.push(record)
+  return out
 }

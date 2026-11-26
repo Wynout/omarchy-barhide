@@ -43,7 +43,22 @@ Item {
   // means "the native behavior: every screen".
   property var selectedRefs: []
   property var targetScreens: []
+  // Autohide is an independent per-screen behavior layered on top of the
+  // existing show/hide selection. An empty list means no screens autohide.
+  property var autohideRefs: []
+  property var autohideTargetScreens: []
+  property var sectionZoneRecords: []
   readonly property bool hasSelection: selectedRefs.length > 0
+
+  // Global display modes override the per-screen values without replacing
+  // them, so switching back to per-monitor restores the previous choices.
+  readonly property string displayMode: {
+    var value = optionOf(st.overrideEntry, "displayMode")
+    if (value === null) value = optionOf(st.ownEntryFromConfig, "displayMode")
+    if (value === null) value = optionOf(st.sandboxEntry, "displayMode")
+    return value === "show-all" || value === "autohide-all"
+      ? value : "per-monitor"
+  }
 
   // Options (resolved next to the selection): showCountBadge controls the
   // picker button's selection-count badge; pickerGlyph overrides the badge
@@ -94,6 +109,16 @@ Item {
     if (obj.primary) legacy.push(obj.primary)
     if (obj.secondary) legacy.push(obj.secondary)
     return legacy.length ? legacy : null
+  }
+
+  function autohideRefsOf(obj) {
+    if (!Util.isPlainObject(obj) || !Array.isArray(obj.autohideMonitors)) return null
+    return obj.autohideMonitors
+  }
+
+  function sectionZonesOf(obj) {
+    if (!Util.isPlainObject(obj) || !Array.isArray(obj.sectionZones)) return null
+    return obj.sectionZones
   }
 
   FileView {
@@ -149,13 +174,23 @@ Item {
     var list = refsOf(st.overrideEntry)
       || refsOf(st.ownEntryFromConfig)
       || []
+    var autoList = autohideRefsOf(st.overrideEntry)
+    if (autoList === null) autoList = autohideRefsOf(st.ownEntryFromConfig)
+    if (autoList === null) autoList = []
+    var zones = sectionZonesOf(st.overrideEntry)
+    if (zones === null) zones = sectionZonesOf(st.ownEntryFromConfig)
+    if (zones === null) zones = []
     st.selectedRefs = list
+    st.autohideRefs = autoList
+    st.sectionZoneRecords = zones
 
     // The connected subset of the selected monitors, deduped by name. A
     // reference whose monitor is disconnected stays in the list (pend list
     // semantics: the bar returns with the monitor).
     var out = []
+    var autoOut = []
     var seen = {}
+    var autoSeen = {}
     var screens = Quickshell.screens || []
     for (var i = 0; i < list.length; i++) {
       var s = Model.findScreen(screens, list[i])
@@ -164,7 +199,15 @@ Item {
         out.push(s)
       }
     }
+    for (var j = 0; j < autoList.length; j++) {
+      var autoScreen = Model.findScreen(screens, autoList[j])
+      if (autoScreen && autoSeen[autoScreen.name] !== true) {
+        autoSeen[autoScreen.name] = true
+        autoOut.push(autoScreen)
+      }
+    }
     st.targetScreens = out
+    st.autohideTargetScreens = autoOut
   }
 
   // The connected screens of this configuration, re-evaluated whenever they

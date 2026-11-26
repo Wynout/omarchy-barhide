@@ -37,6 +37,11 @@ Panel {
   // apply late via injectProps, which used to render every row as "hide".
   property var selectedRefs: []
   property var targetScreens: []
+  property string displayMode: "per-monitor"
+
+  // The theme's `muted` role can be too low-contrast on a popup. Use the
+  // dedicated popup text role for secondary labels; it still follows themes.
+  readonly property color secondaryTextColor: Color.popups.text
 
   function captureScreen(screen) {
     return {
@@ -68,25 +73,13 @@ Panel {
   // Effective bar state for a connected screen: with an empty selection the
   // bar is on every screen, so every screen reads "hide".
   function onBarNow(screen) {
+    if (root.displayMode === "show-all" || root.displayMode === "autohide-all") return true
     return selectedRefs.length === 0 ? true : isSelected(screen)
   }
 
   function toggleScreen(screen) {
-    var list = []
-    if (selectedRefs.length === 0) {
-      // The bar covers every screen; hiding one pins it to the others.
-      var screens = Quickshell.screens || []
-      for (var i = 0; i < screens.length; i++) {
-        var s = screens[i]
-        if (s && s.name !== screen.name) list.push(captureScreen(s))
-      }
-    } else {
-      for (var j = 0; j < selectedRefs.length; j++)
-        if (!refResolvesTo(selectedRefs[j], screen)) list.push(selectedRefs[j])
-      if (!isSelected(screen)) list.push(captureScreen(screen))
-    }
-    if (hostWidget && typeof hostWidget.applySettings === "function")
-      hostWidget.applySettings({ monitors: list })
+    if (hostWidget && typeof hostWidget.setScreenEnabled === "function")
+      hostWidget.setScreenEnabled(screen, !root.onBarNow(screen))
   }
 
   // Selected references whose monitor is not connected right now. They stay
@@ -119,9 +112,9 @@ Panel {
       hostWidget.applySettings({ monitors: list })
   }
 
-  function clearAll() {
-    if (hostWidget && typeof hostWidget.applySettings === "function")
-      hostWidget.applySettings({ monitors: [] })
+  function setDisplayMode(mode) {
+    if (hostWidget && typeof hostWidget.setDisplayMode === "function")
+      hostWidget.setDisplayMode(mode)
   }
 
   // "1920×1080", or "" when the shell does not expose the geometry.
@@ -151,33 +144,48 @@ Panel {
     return false
   }
 
-  // One connected screen: a hoverable, whole-row clickable card. The
-  // ToggleSwitch is presentation only — the row owns the click, exactly the
-  // Ui.Toggle pattern — so the hit target is the full row.
+  // One connected screen: the information area toggles bar presence, and the
+  // switches independently control presence, auto-hide, and the three native
+  // bar sections.
   component ScreenRow: BorderSurface {
     id: rowRoot
 
     required property var modelData
 
     readonly property bool onBar: root.onBarNow(modelData)
+    readonly property bool autoHide: root.hostWidget
+      ? root.hostWidget.shouldAutohide(modelData) : false
+    readonly property bool leftZoneShown: root.hostWidget
+      ? root.hostWidget.sectionVisible(modelData, "left") : true
+    readonly property bool centerZoneShown: root.hostWidget
+      ? root.hostWidget.sectionVisible(modelData, "center") : true
+    readonly property bool rightZoneShown: root.hostWidget
+      ? root.hostWidget.sectionVisible(modelData, "right") : true
+    readonly property bool autoHideSupported: root.hostWidget
+      ? root.hostWidget.autoHideSupported : false
+    readonly property bool sectionZonesSupported: root.hostWidget
+      ? root.hostWidget.sectionZonesSupported : false
     readonly property bool hot: rowMouse.containsMouse
+    readonly property real controlColumnWidth: Style.space(58)
 
     width: parent.width
     implicitHeight: rowLayout.implicitHeight + Style.space(12)
     radius: Style.cornerRadius
 
     color: Style.controlFill(false, hot, root.barForeground, Color.accent)
-    borderSpec: Border.controlSpec(hot ? "hover-cursor" : "normal", root.barForeground, Color.accent)
+    borderSpec: Border.controlSpec(
+      rowRoot.onBar ? "selected" : (hot ? "hover-cursor" : "normal"),
+      root.barForeground, Color.accent)
     Behavior on color { ColorAnimation { duration: 100 } }
 
     Row {
       id: rowLayout
       anchors.left: parent.left
       anchors.right: parent.right
-      anchors.verticalCenter: parent.verticalCenter
       anchors.leftMargin: Style.spacing.rowPaddingX
       anchors.rightMargin: Style.spacing.rowPaddingX
-      spacing: Style.space(10)
+      anchors.verticalCenter: parent.verticalCenter
+      spacing: Style.space(6)
 
       // A tiny monitor with placeholder bars: drawn per row so the list
       // shows where the bar sits (top/bottom/left/right per the native bar's
@@ -222,11 +230,13 @@ Panel {
       }
 
       Column {
-        width: rowLayout.width - miniMonitor.width - rowToggle.implicitWidth - rowLayout.spacing * 2
+        width: Math.max(0, rowLayout.width - miniMonitor.width
+          - rowRoot.controlColumnWidth * 5 - rowLayout.spacing * 6)
         spacing: Style.space(1)
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
+          textFormat: Text.PlainText
           width: parent.width
           text: rowRoot.modelData.name
           color: root.barForeground
@@ -237,29 +247,169 @@ Panel {
         }
 
         Text {
+          textFormat: Text.PlainText
           width: parent.width
           text: (rowRoot.modelData.model || "unknown model")
             + (root.resolutionLabel(rowRoot.modelData) !== ""
               ? " · " + root.resolutionLabel(rowRoot.modelData) : "")
-          color: Color.muted
+          color: root.secondaryTextColor
           font.family: root.bar ? root.bar.fontFamily : Style.font.family
           font.pixelSize: Style.font.caption
           elide: Text.ElideRight
         }
       }
 
-      ToggleSwitch {
-        id: rowToggle
-        checked: rowRoot.onBar
-        interactive: false
-        cursorRing: false
+      Column {
+        id: enableControl
+        width: rowRoot.controlColumnWidth
+        spacing: Style.space(1)
         anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          id: enableLabel
+          textFormat: Text.PlainText
+          text: "Enabled"
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          width: parent.width
+        }
+
+        ToggleSwitch {
+          id: rowToggle
+          checked: rowRoot.onBar
+          enabled: root.displayMode === "per-monitor" || root.displayMode === "show-all"
+          interactive: true
+          cursorRing: false
+          anchors.horizontalCenter: parent.horizontalCenter
+          onToggled: root.toggleScreen(rowRoot.modelData)
+        }
+      }
+
+      Column {
+        id: autoHideControl
+        width: rowRoot.controlColumnWidth
+        spacing: Style.space(1)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          id: autoHideLabel
+          textFormat: Text.PlainText
+          text: "Auto-hide"
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          width: parent.width
+        }
+
+        ToggleSwitch {
+          id: autoHideToggle
+          checked: rowRoot.autoHide
+          enabled: rowRoot.autoHideSupported
+          interactive: true
+          cursorRing: false
+          anchors.horizontalCenter: parent.horizontalCenter
+          onToggled: if (root.hostWidget) root.hostWidget.toggleAutohide(rowRoot.modelData)
+        }
+      }
+
+      Column {
+        id: leftZoneControl
+        width: rowRoot.controlColumnWidth
+        spacing: Style.space(1)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          id: leftZoneLabel
+          textFormat: Text.PlainText
+          text: "Left"
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          width: parent.width
+        }
+
+        ToggleSwitch {
+          id: leftZoneToggle
+          checked: rowRoot.leftZoneShown
+          enabled: rowRoot.sectionZonesSupported
+          interactive: true
+          cursorRing: false
+          anchors.horizontalCenter: parent.horizontalCenter
+          onToggled: if (root.hostWidget) root.hostWidget.toggleSection(rowRoot.modelData, "left")
+        }
+      }
+
+      Column {
+        id: centerZoneControl
+        width: rowRoot.controlColumnWidth
+        spacing: Style.space(1)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          id: centerZoneLabel
+          textFormat: Text.PlainText
+          text: "Center"
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          width: parent.width
+        }
+
+        ToggleSwitch {
+          id: centerZoneToggle
+          checked: rowRoot.centerZoneShown
+          enabled: rowRoot.sectionZonesSupported
+          interactive: true
+          cursorRing: false
+          anchors.horizontalCenter: parent.horizontalCenter
+          onToggled: if (root.hostWidget) root.hostWidget.toggleSection(rowRoot.modelData, "center")
+        }
+      }
+
+      Column {
+        id: rightZoneControl
+        width: rowRoot.controlColumnWidth
+        spacing: Style.space(1)
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+          id: rightZoneLabel
+          textFormat: Text.PlainText
+          text: "Right"
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          horizontalAlignment: Text.AlignHCenter
+          width: parent.width
+        }
+
+        ToggleSwitch {
+          id: rightZoneToggle
+          checked: rowRoot.rightZoneShown
+          enabled: rowRoot.sectionZonesSupported
+          interactive: true
+          cursorRing: false
+          anchors.horizontalCenter: parent.horizontalCenter
+          onToggled: if (root.hostWidget) root.hostWidget.toggleSection(rowRoot.modelData, "right")
+        }
       }
     }
 
     MouseArea {
       id: rowMouse
-      anchors.fill: parent
+      z: 0
+      x: 0
+      y: rowLayout.mapToItem(rowRoot, 0, 0).y
+      enabled: root.displayMode === "per-monitor"
+      // The row click area ends before the switches. This also
+      // prevents a switch click from reaching toggleScreen().
+      width: Math.max(0, enableControl.mapToItem(rowRoot, 0, 0).x)
+      height: rowLayout.height
       hoverEnabled: true
       cursorShape: Qt.PointingHandCursor
       onClicked: root.toggleScreen(rowRoot.modelData)
@@ -290,11 +440,12 @@ Panel {
       spacing: Style.space(8)
 
       Text {
+        textFormat: Text.PlainText
         width: parent.width - forgetButton.implicitWidth - parent.spacing
         text: unresolvedRoot.modelData.name
           ? unresolvedRoot.modelData.name + " (not connected)"
           : "not connected"
-        color: Color.muted
+        color: root.secondaryTextColor
         font.family: root.bar ? root.bar.fontFamily : Style.font.family
         font.pixelSize: Style.font.caption
         elide: Text.ElideRight
@@ -308,7 +459,7 @@ Panel {
         anchors.verticalCenter: parent.verticalCenter
         iconText: "\uDB80\uDD59"
         tooltipText: "forget"
-        foreground: Color.muted
+        foreground: root.secondaryTextColor
         hoverColor: Color.urgent
         fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
         onClicked: root.forgetRef(unresolvedRoot.modelData)
@@ -323,8 +474,9 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(360))
+    contentWidth: panel.fittedContentWidth(Style.space(640))
     contentHeight: panel.fittedContentHeight(contentColumn.implicitHeight)
+    borderSpec: Border.flat(Color.accent, Math.max(1, Style.space(1)))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -367,7 +519,7 @@ Panel {
                 anchors.verticalCenterOffset: -Style.space(6)
                 iconText: root.showOptions ? "\uDB81\uDC11" : "\uDB81\uDC93"
                 tooltipText: root.showOptions ? "back to screens" : "options"
-                foreground: Color.muted
+                foreground: root.secondaryTextColor
                 hoverColor: Color.accent
                 fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
                 onClicked: root.showOptions = !root.showOptions
@@ -395,11 +547,58 @@ Panel {
           width: parent.width
           spacing: Style.space(10)
 
-        // ---- Connected screens
         PanelSectionHeader {
-          text: "Toggle bars per screen"
+          text: "Display mode"
           foreground: root.barForeground
           fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+        }
+
+        Dropdown {
+          width: parent.width
+          label: ""
+          showLabel: false
+          value: root.displayMode
+          options: [
+            { value: "per-monitor", label: "Per-monitor" },
+            { value: "show-all", label: "Show everywhere" },
+            { value: "autohide-all", label: "Auto-hide everywhere" }
+          ]
+          foreground: root.barForeground
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+          onChanged: root.setDisplayMode(value)
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.displayMode === "show-all"
+            ? "Show everywhere resets per-monitor overrides. Click Enabled, Auto-hide, or a zone switch to customize that screen."
+            : (root.displayMode === "autohide-all"
+              ? "Every bar edge-reveals. Click Auto-hide or a zone switch to customize a screen; this switches to Per-monitor."
+              : "Use the switches below to set each monitor independently.")
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
+        }
+
+        // ---- Connected screens
+        PanelSectionHeader {
+          text: "Per-monitor settings"
+          foreground: root.barForeground
+          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
+        }
+
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          text: root.hostWidget && root.hostWidget.sectionZonesSupported
+            ? "Zone switches control left, center, and right sections; Center groups centerBegin, center, and centerEnd."
+            : "Section zone controls require Omarchy 4.5+."
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
         }
 
         Repeater {
@@ -425,9 +624,12 @@ Panel {
 
         PanelSeparator {}
 
-        // ---- Selection read-out (full picture, including not-connected refs)
+        // ---- Saved per-monitor selection (full picture, including
+        // not-connected refs); global modes do not overwrite it.
         Text {
           width: parent.width
+          textFormat: Text.PlainText
+          visible: root.displayMode === "per-monitor"
           text: root.selectedRefs.length
             ? "Bar on: " + root.selectedRefs.map(Model.refLabel).join(", ")
             : "Nothing hidden - bar on every screen."
@@ -437,13 +639,17 @@ Panel {
           wrapMode: Text.WordWrap
         }
 
-        Button {
-          text: "show on all"
-          bordered: true
-          enabled: root.selectedRefs.length > 0
-          opacity: enabled ? 1.0 : 0.4
-          fontFamily: root.bar ? root.bar.fontFamily : Style.font.family
-          onClicked: root.clearAll()
+        Text {
+          width: parent.width
+          textFormat: Text.PlainText
+          visible: root.displayMode !== "per-monitor"
+          text: root.displayMode === "show-all"
+            ? "Show everywhere reset per-monitor settings. Enabled, Auto-hide, and zone switches return to Per-monitor for that screen."
+            : "Per-monitor choices are preserved. Clicking Auto-hide or a zone switch returns to Per-monitor and applies that change."
+          color: root.secondaryTextColor
+          font.family: root.bar ? root.bar.fontFamily : Style.font.family
+          font.pixelSize: Style.font.caption
+          wrapMode: Text.WordWrap
         }
         }
 
@@ -495,7 +701,7 @@ Panel {
                 Text {
                   width: parent.width
                   text: "Show how many screens carry the bar, next to the picker icon."
-                  color: Color.muted
+                  color: root.secondaryTextColor
                   font.family: root.bar ? root.bar.fontFamily : Style.font.family
                   font.pixelSize: Style.font.caption
                   wrapMode: Text.WordWrap
@@ -609,7 +815,7 @@ Panel {
                 width: parent.width
                 leftPadding: Style.spacing.rowPaddingX
                 text: "The icon on the bar's picker button."
-                color: Color.muted
+                color: root.secondaryTextColor
                 font.family: root.bar ? root.bar.fontFamily : Style.font.family
                 font.pixelSize: Style.font.caption
                 wrapMode: Text.WordWrap
